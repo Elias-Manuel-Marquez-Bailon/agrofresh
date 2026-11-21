@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface ProductorRepository extends JpaRepository<Productor, Long> {
 
     Optional<Productor> findByUsuarioId(Long usuarioId);
+
+    Optional<Productor> findByUsuarioEmail(String email);
 }
