@@ -8,9 +8,6 @@ SET NAMES utf8mb4;
 SET time_zone = '-06:00';
 
 -- La base la crea el contenedor a partir de MYSQL_DATABASE; aquí solo la usamos.
--- (Si ejecutas este script manualmente, descomenta las dos líneas siguientes.)
--- CREATE DATABASE IF NOT EXISTS agrofresh CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE agrofresh;
 
 -- ----------------------------------------------------------
 -- usuarios
