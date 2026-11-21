@@ -70,6 +70,19 @@ CREATE TABLE IF NOT EXISTS productos (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------
+-- producto_imagenes (una imagen opcional por producto, en binario)
+-- Tabla aparte para que listar productos no cargue las imágenes.
+-- ----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS producto_imagenes (
+    producto_id    BIGINT PRIMARY KEY,
+    tipo           VARCHAR(30) NOT NULL,         -- image/jpeg, image/png, image/webp
+    datos          MEDIUMBLOB NOT NULL,          -- máx. 2 MB (validado en el backend)
+    actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_imagen_producto FOREIGN KEY (producto_id)
+        REFERENCES productos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------
 -- lotes (trazabilidad: siembra -> cosecha)
 -- ----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS lotes (
