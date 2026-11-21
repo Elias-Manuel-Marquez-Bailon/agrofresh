@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+/* Paleta de AgroFresh: se usa como bg-marca-600, text-marca-700, etc. */
+@theme {
+  --color-marca-50: #f0fdf4;
+  --color-marca-100: #dcfce7;
+  --color-marca-500: #22c55e;
+  --color-marca-600: #16a34a;
+  --color-marca-700: #15803d;
+  --color-marca-800: #166534;
+}
+
+body {
+  @apply bg-gray-50 text-gray-800 antialiased;
+}
