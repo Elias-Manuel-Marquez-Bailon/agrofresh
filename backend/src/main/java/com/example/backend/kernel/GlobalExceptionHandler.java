@@ -8,6 +8,10 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -35,6 +39,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse> jsonInvalido(HttpMessageNotReadableException ex) {
         return respuesta("El cuerpo de la petición no es válido", null, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse> archivoGrande(MaxUploadSizeExceededException ex) {
+        return respuesta("La imagen no puede pesar más de 2 MB", null, HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    @ExceptionHandler({MissingServletRequestParameterException.class, MissingServletRequestPartException.class,
+            MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiResponse> parametroInvalido(Exception ex) {
+        return respuesta("Faltan parámetros o tienen un formato inválido", null, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
