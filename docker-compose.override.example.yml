@@ -1,0 +1,16 @@
+# SOLO PARA DESARROLLO LOCAL.
+# Cópialo como docker-compose.override.yml (está en .gitignore) y Docker Compose
+# lo aplicará automáticamente. Expone MySQL y el backend al host para que puedas
+# conectarte desde IntelliJ / DataGrip / Workbench o probar la API directamente.
+#
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+#
+# NO uses este archivo en la instancia de AWS.
+services:
+  db:
+    ports:
+      - "3307:3306"   # 3307 en el host para no chocar con un MySQL local
+
+  backend:
+    ports:
+      - "8080:8080"
