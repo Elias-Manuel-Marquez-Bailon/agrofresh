@@ -10,15 +10,19 @@ import RegistroPage from '../pages/auth/RegistroPage'
 import AdminHome from '../pages/admin/AdminHome'
 import ProductorHome from '../pages/productor/ProductorHome'
 import CompradorHome from '../pages/comprador/CompradorHome'
+import CatalogoPage from '../pages/catalogo/CatalogoPage'
+import ProductoDetallePage from '../pages/catalogo/ProductoDetallePage'
+import MisProductosPage from '../pages/productor/MisProductosPage'
+import CategoriasPage from '../pages/admin/CategoriasPage'
 import NoAutorizado from '../pages/NoAutorizado'
 import NotFound from '../pages/NotFound'
 import Spinner from '../components/ui/Spinner'
 
-/** "/" manda a cada quien a su inicio según su rol. */
+/** "/" manda a cada quien a su inicio según su rol; sin sesión, al catálogo público. */
 function Inicio() {
   const { usuario, cargando } = useAuth()
   if (cargando) return <Spinner pantallaCompleta />
-  return <Navigate to={usuario ? rutaInicio(usuario.rol) : '/login'} replace />
+  return <Navigate to={usuario ? rutaInicio(usuario.rol) : '/catalogo'} replace />
 }
 
 /** Si ya hay sesión, no tiene sentido ver login/registro. */
@@ -39,14 +43,22 @@ export default function AppRouter() {
         <Route path="/registro" element={<RegistroPage />} />
       </Route>
 
+      {/* Catálogo público (con o sin sesión) */}
+      <Route element={<MainLayout />}>
+        <Route path="/catalogo" element={<CatalogoPage />} />
+        <Route path="/catalogo/:id" element={<ProductoDetallePage />} />
+      </Route>
+
       {/* Privadas, por rol */}
       <Route element={<PrivateRoute />}>
         <Route element={<MainLayout />}>
           <Route element={<RoleRoute roles={['ADMIN']} />}>
             <Route path="/admin" element={<AdminHome />} />
+            <Route path="/admin/categorias" element={<CategoriasPage />} />
           </Route>
           <Route element={<RoleRoute roles={['PRODUCTOR']} />}>
             <Route path="/productor" element={<ProductorHome />} />
+            <Route path="/productor/productos" element={<MisProductosPage />} />
           </Route>
           <Route element={<RoleRoute roles={['COMPRADOR']} />}>
             <Route path="/comprador" element={<CompradorHome />} />
