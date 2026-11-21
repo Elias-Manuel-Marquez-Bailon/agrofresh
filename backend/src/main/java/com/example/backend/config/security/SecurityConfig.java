@@ -43,6 +43,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/registro").permitAll()
+                        // Catálogo público (solo lectura). "/mios" va antes porque requiere sesión.
+                        .requestMatchers(HttpMethod.GET, "/api/productos/mios").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/productos", "/api/productos/*",
+                                "/api/productos/*/imagen", "/api/categorias").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
