@@ -50,7 +50,7 @@ cp .env.example .env          # y edita las contraseñas y JWT_SECRET
 docker compose up -d --build
 ```
 - App: http://localhost
-- Swagger: http://localhost/api/swagger-ui.html *(disponible desde la Fase 1)*
+- Swagger: http://localhost/api/swagger-ui.html
 
 ### Credenciales iniciales
 | Rol | Email | Password |
@@ -70,9 +70,9 @@ Luego ejecuta el backend desde IntelliJ y el frontend con `npm run dev` (ver `ba
 
 ## Fases del proyecto
 - [x] Fase 0 — Estructura, docker-compose, init.sql
-- [ ] Fase 1 — Backend base + autenticación JWT + tests
-- [ ] Fase 2 — Frontend base + login/registro + rutas por rol
-- [ ] Fase 3 — Catálogo de productos y categorías
+- [x] Fase 1 — Backend base + autenticación JWT + tests
+- [x] Fase 2 — Frontend base + login/registro + rutas por rol
+- [x] Fase 3 — Catálogo público de productos (búsqueda, filtro, paginación e imagen) y categorías
 - [ ] Fase 4 — Pedidos, carrito y estados
 - [ ] Fase 5 — Trazabilidad y calificaciones
 - [ ] Fase 6 — Dashboards y exportación CSV
