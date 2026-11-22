@@ -19,6 +19,12 @@ export async function pedidosRecibidos({ estado, pagina = 0, tamanio = 10 } = {}
   return data.data
 }
 
+/** Solo ADMIN: todos los pedidos de la plataforma. */
+export async function todosLosPedidos({ estado, pagina = 0, tamanio = 10 } = {}) {
+  const { data } = await api.get('/pedidos', { params: { estado: estado || undefined, pagina, tamanio } })
+  return data.data
+}
+
 /** lotes (opcional, solo al aceptar): { productoId: loteId } */
 export async function cambiarEstadoPedido(id, estado, lotes) {
   const { data } = await api.patch(`/pedidos/${id}/estado`, { estado, lotes })
