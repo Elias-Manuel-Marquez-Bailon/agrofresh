@@ -81,13 +81,14 @@ Todas las respuestas usan el formato `{ message, data, error, status }`.
 | GET | `/api/pedidos/recibidos?estado=&pagina=&tamanio=` | PRODUCTOR |
 | GET | `/api/pedidos?estado=&pagina=&tamanio=` | ADMIN |
 | GET | `/api/pedidos/{id}` | Comprador o productor del pedido, o ADMIN |
-| PATCH | `/api/pedidos/{id}/estado` | Comprador o productor del pedido |
+| PATCH | `/api/pedidos/{id}/estado` | Comprador o productor del pedido, o ADMIN (solo cancelar) |
 
 **Estados:** `PENDIENTE → ACEPTADO → EN_CAMINO → ENTREGADO`, o `CANCELADO`.
 - Al **aceptar**, se descuenta el stock (con bloqueo de fila para evitar sobreventa). Si un producto no alcanza, no se acepta.
 - Al **cancelar** un pedido ya aceptado, se repone el stock.
 - El productor avanza los estados y puede cancelar mientras el pedido esté PENDIENTE o ACEPTADO.
 - El comprador solo puede cancelar mientras esté PENDIENTE.
+- El ADMIN solo puede cancelar, mientras esté PENDIENTE o ACEPTADO.
 
 **Lotes al aceptar (opcional):** `{ "estado": "ACEPTADO", "lotes": { "<productoId>": <loteId> } }`. El lote debe ser del mismo producto y estar cosechado. Al pasar a ENTREGADO se guarda `fecha_entrega`.
 
@@ -111,6 +112,18 @@ Todas las respuestas usan el formato `{ message, data, error, status }`.
 | GET | `/api/calificaciones/mias` | PRODUCTOR |
 
 El catálogo (`/api/productos`) incluye `calificacionPromedio` y `totalCalificaciones` del productor.
+
+### Dashboards y CSV
+| Método | Ruta | Acceso |
+|---|---|---|
+| GET | `/api/dashboard/productor` | PRODUCTOR: ventas, pedidos por estado, ventas por mes, top productos, calificación |
+| GET | `/api/dashboard/comprador` | COMPRADOR: gasto, pedidos por estado, gasto por mes, top productos y productores |
+| GET | `/api/dashboard/admin` | ADMIN: lo anterior para toda la plataforma + ventas por categoría y usuarios por rol |
+| GET | `/api/dashboard/{productor\|comprador\|admin}/pedidos.csv?estado=&desde=&hasta=` | El rol correspondiente |
+
+- **Ventas** = pedidos ACEPTADOS, EN_CAMINO o ENTREGADOS (los pendientes y cancelados no cuentan).
+- Ventas por mes: últimos 6 meses, los meses sin ventas salen en 0. Tops: los 5 primeros por monto.
+- CSV: UTF-8 con BOM (Excel respeta los acentos), fechas `AAAA-MM-DD` y `hasta` inclusivo. Los textos que empiezan con `= + - @` se escapan para evitar inyección de fórmulas.
 
 > **Base ya creada:** si tu base `agrofresh` existía antes de la Fase 5, ejecuta una vez:
 > `ALTER TABLE pedidos ADD COLUMN fecha_entrega DATETIME NULL;`
