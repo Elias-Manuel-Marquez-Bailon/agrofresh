@@ -47,6 +47,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/productos/mios").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/productos", "/api/productos/*",
                                 "/api/productos/*/imagen", "/api/categorias").permitAll()
+                        // Origen (lotes) y reseñas públicas del catálogo
+                        .requestMatchers(HttpMethod.GET, "/api/lotes/producto/*",
+                                "/api/calificaciones/productor/*").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())

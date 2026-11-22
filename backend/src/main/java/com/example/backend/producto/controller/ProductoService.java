@@ -1,5 +1,7 @@
 package com.example.backend.producto.controller;
 
+import com.example.backend.calificacion.controller.CalificacionService;
+import com.example.backend.calificacion.model.CalificacionRepository;
 import com.example.backend.categoria.model.Categoria;
 import com.example.backend.categoria.model.CategoriaRepository;
 import com.example.backend.kernel.ApiResponse;
@@ -44,6 +46,7 @@ public class ProductoService {
     private final ProductoImagenRepository imagenRepository;
     private final CategoriaRepository categoriaRepository;
     private final ProductorRepository productorRepository;
+    private final CalificacionRepository calificacionRepository;
 
     // ---------- Público ----------
 
@@ -223,8 +226,20 @@ public class ProductoService {
                 .findInfoByProductoIds(productos.stream().map(Producto::getId).toList()).stream()
                 .collect(Collectors.toMap(ProductoImagenRepository.ImagenInfo::getProductoId,
                         ProductoImagenRepository.ImagenInfo::getActualizadoEn));
+        // Promedio de estrellas por productor, también en una sola consulta.
+        Map<Long, CalificacionRepository.Resumen> resumenes = calificacionRepository
+                .resumenPorProductores(productos.stream().map(p -> p.getProductor().getId()).distinct().toList())
+                .stream().collect(Collectors.toMap(CalificacionRepository.Resumen::getProductorId, r -> r));
         return productos.stream()
-                .map(p -> ProductoResponseDto.from(p, imagenes.get(p.getId())))
+                .map(p -> {
+                    ProductoResponseDto dto = ProductoResponseDto.from(p, imagenes.get(p.getId()));
+                    CalificacionRepository.Resumen r = resumenes.get(p.getProductor().getId());
+                    if (r != null) {
+                        dto.setCalificacionPromedio(CalificacionService.redondear(r.getPromedio()));
+                        dto.setTotalCalificaciones(r.getTotal());
+                    }
+                    return dto;
+                })
                 .toList();
     }
 

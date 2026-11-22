@@ -28,6 +28,10 @@ public class ProductoResponseDto {
     private String nombreFinca;
     /** null si no tiene imagen. Lleva ?v= para que el navegador refresque la caché al cambiarla. */
     private String imagenUrl;
+    /** Promedio de estrellas del productor (null si aún no tiene calificaciones). */
+    private Double calificacionPromedio;
+    @Builder.Default
+    private Long totalCalificaciones = 0L;
 
     public static ProductoResponseDto from(Producto p, LocalDateTime imagenActualizada) {
         String url = imagenActualizada == null ? null
