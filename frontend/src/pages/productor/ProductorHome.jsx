@@ -18,6 +18,7 @@ export default function ProductorHome() {
           { titulo: 'Mis productos', desc: 'Publica tu cosecha con precio y stock', to: '/productor/productos' },
           { titulo: 'Pedidos recibidos', desc: 'Acepta y envía los pedidos de tus compradores', to: '/productor/pedidos' },
           { titulo: 'Lotes', desc: 'Registra siembra y cosecha para la trazabilidad', to: '/productor/lotes' },
+          { titulo: 'Dashboard', desc: 'Tus ventas, productos más vendidos y CSV', to: '/productor/dashboard' },
         ]}
       />
       <div className="mt-8">

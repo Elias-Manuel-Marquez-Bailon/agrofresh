@@ -17,8 +17,14 @@ const TAMANIO = 10
  * Acciones disponibles según quién mira el pedido (mismas reglas que el backend):
  *  - comprador: cancelar si está PENDIENTE
  *  - productor: aceptar / en camino / entregado, y cancelar si está PENDIENTE o ACEPTADO
+ *  - admin: solo cancelar si está PENDIENTE o ACEPTADO
  */
 function accionesDe(vista, estado) {
+  if (vista === 'admin') {
+    return estado === 'PENDIENTE' || estado === 'ACEPTADO'
+      ? [{ estado: 'CANCELADO', texto: 'Cancelar pedido', variante: 'peligro' }]
+      : []
+  }
   if (vista === 'comprador') {
     return estado === 'PENDIENTE' ? [{ estado: 'CANCELADO', texto: 'Cancelar pedido', variante: 'peligro' }] : []
   }
@@ -44,7 +50,7 @@ const CONFIRMACION = {
   CANCELADO: '¿Seguro que quieres cancelar este pedido? Esta acción no se puede deshacer.',
 }
 
-/** Lista paginada de pedidos con filtro por estado. vista: "comprador" | "productor". */
+/** Lista paginada de pedidos con filtro por estado. vista: "comprador" | "productor" | "admin". */
 export default function ListaPedidos({ titulo, subtitulo, vista, cargar, mensajeInicial = '' }) {
   const [estado, setEstado] = useState('')
   const [pagina, setPagina] = useState(0)
@@ -148,7 +154,11 @@ export default function ListaPedidos({ titulo, subtitulo, vista, cargar, mensaje
                   </p>
                   <p className="mt-1 text-sm text-gray-500">
                     {formatoFecha(p.createdAt)} ·{' '}
-                    {vista === 'comprador' ? `Productor: ${p.nombreFinca}` : `Comprador: ${p.compradorNombre}`}
+                    {vista === 'admin'
+                      ? `Productor: ${p.nombreFinca} · Comprador: ${p.compradorNombre}`
+                      : vista === 'comprador'
+                        ? `Productor: ${p.nombreFinca}`
+                        : `Comprador: ${p.compradorNombre}`}
                   </p>
                   <p className="text-sm text-gray-500">Entrega: {p.direccionEntrega}</p>
                 </div>

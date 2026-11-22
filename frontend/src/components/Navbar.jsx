@@ -5,21 +5,29 @@ import { rutaInicio } from '../utils/errores'
 import { useCarrito } from '../context/CarritoContext'
 import Logo from './Logo'
 
-// Menú por rol. Se irá llenando en las siguientes fases.
+// Menú por rol.
 const CATALOGO = { to: '/catalogo', texto: 'Catálogo' }
 const MENU = {
-  ADMIN: [{ to: '/admin', texto: 'Inicio', end: true }, { to: '/admin/categorias', texto: 'Categorías' }, CATALOGO],
+  ADMIN: [
+    { to: '/admin', texto: 'Inicio', end: true },
+    { to: '/admin/dashboard', texto: 'Dashboard' },
+    { to: '/admin/pedidos', texto: 'Pedidos' },
+    { to: '/admin/categorias', texto: 'Categorías' },
+    CATALOGO,
+  ],
   PRODUCTOR: [
     { to: '/productor', texto: 'Inicio', end: true },
     { to: '/productor/productos', texto: 'Mis productos' },
     { to: '/productor/pedidos', texto: 'Pedidos' },
     { to: '/productor/lotes', texto: 'Lotes' },
+    { to: '/productor/dashboard', texto: 'Dashboard' },
     CATALOGO,
   ],
   COMPRADOR: [
     { to: '/comprador', texto: 'Inicio', end: true },
     CATALOGO,
     { to: '/comprador/pedidos', texto: 'Mis pedidos' },
+    { to: '/comprador/dashboard', texto: 'Mis compras' },
     { to: '/carrito', texto: 'Carrito', carrito: true },
   ],
   INVITADO: [CATALOGO],

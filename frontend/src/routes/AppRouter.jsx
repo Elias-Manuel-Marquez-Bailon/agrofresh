@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { rutaInicio } from '../utils/errores'
@@ -18,9 +19,17 @@ import CarritoPage from '../pages/comprador/CarritoPage'
 import MisPedidosPage from '../pages/comprador/MisPedidosPage'
 import PedidosRecibidosPage from '../pages/productor/PedidosRecibidosPage'
 import LotesPage from '../pages/productor/LotesPage'
+import PedidosAdminPage from '../pages/admin/PedidosAdminPage'
 import NoAutorizado from '../pages/NoAutorizado'
 import NotFound from '../pages/NotFound'
 import Spinner from '../components/ui/Spinner'
+
+// Los dashboards usan Recharts (pesado): se cargan solo cuando se abren.
+const DashboardAdminPage = lazy(() => import('../pages/admin/DashboardAdminPage'))
+const DashboardProductorPage = lazy(() => import('../pages/productor/DashboardProductorPage'))
+const DashboardCompradorPage = lazy(() => import('../pages/comprador/DashboardCompradorPage'))
+
+const conCarga = (pagina) => <Suspense fallback={<div className="py-20 text-center"><Spinner /></div>}>{pagina}</Suspense>
 
 /** "/" manda a cada quien a su inicio según su rol; sin sesión, al catálogo público. */
 function Inicio() {
@@ -59,17 +68,21 @@ export default function AppRouter() {
           <Route element={<RoleRoute roles={['ADMIN']} />}>
             <Route path="/admin" element={<AdminHome />} />
             <Route path="/admin/categorias" element={<CategoriasPage />} />
+            <Route path="/admin/dashboard" element={conCarga(<DashboardAdminPage />)} />
+            <Route path="/admin/pedidos" element={<PedidosAdminPage />} />
           </Route>
           <Route element={<RoleRoute roles={['PRODUCTOR']} />}>
             <Route path="/productor" element={<ProductorHome />} />
             <Route path="/productor/productos" element={<MisProductosPage />} />
             <Route path="/productor/pedidos" element={<PedidosRecibidosPage />} />
             <Route path="/productor/lotes" element={<LotesPage />} />
+            <Route path="/productor/dashboard" element={conCarga(<DashboardProductorPage />)} />
           </Route>
           <Route element={<RoleRoute roles={['COMPRADOR']} />}>
             <Route path="/comprador" element={<CompradorHome />} />
             <Route path="/carrito" element={<CarritoPage />} />
             <Route path="/comprador/pedidos" element={<MisPedidosPage />} />
+            <Route path="/comprador/dashboard" element={conCarga(<DashboardCompradorPage />)} />
           </Route>
           <Route path="/no-autorizado" element={<NoAutorizado />} />
         </Route>
