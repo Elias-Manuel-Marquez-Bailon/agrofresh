@@ -204,6 +204,7 @@ public class PedidoService {
      * - Productor: PENDIENTE -> ACEPTADO (descuenta stock) -> EN_CAMINO -> ENTREGADO.
      * - Productor: cancela si está PENDIENTE o ACEPTADO (si estaba ACEPTADO, repone el stock).
      * - Comprador: solo cancela si está PENDIENTE.
+     * - ADMIN: solo cancela, desde PENDIENTE o ACEPTADO (si estaba ACEPTADO, repone el stock).
      */
     public ResponseEntity<ApiResponse> cambiarEstado(String email, Long id, EstadoPedido nuevo) {
         return cambiarEstado(email, id, nuevo, null);
@@ -221,7 +222,8 @@ public class PedidoService {
         Pedido pedido = pedidoOpt.get();
         boolean esComprador = esComprador(usuario, pedido);
         boolean esProductor = esProductor(usuario, pedido);
-        if (!esComprador && !esProductor) {
+        boolean esAdmin = usuario.getRol() == Rol.ADMIN;
+        if (!esComprador && !esProductor && !esAdmin) {
             return respuesta("No tienes permiso para modificar este pedido", null, true, HttpStatus.FORBIDDEN);
         }
 
@@ -232,6 +234,9 @@ public class PedidoService {
         if (esComprador && !(nuevo == EstadoPedido.CANCELADO && actual == EstadoPedido.PENDIENTE)) {
             return respuesta("Como comprador solo puedes cancelar pedidos pendientes", null, true,
                     HttpStatus.FORBIDDEN);
+        }
+        if (esAdmin && !esComprador && !esProductor && nuevo != EstadoPedido.CANCELADO) {
+            return respuesta("Como administrador solo puedes cancelar pedidos", null, true, HttpStatus.FORBIDDEN);
         }
 
         if (nuevo == EstadoPedido.ACEPTADO) {

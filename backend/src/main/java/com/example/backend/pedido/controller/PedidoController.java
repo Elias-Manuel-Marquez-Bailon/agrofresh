@@ -59,7 +59,7 @@ public class PedidoController {
     }
 
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('COMPRADOR','PRODUCTOR')")
+    @PreAuthorize("hasAnyRole('COMPRADOR','PRODUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse> cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambiarEstadoDto dto,
                                                      Authentication auth) {
         return pedidoService.cambiarEstado(auth.getName(), id, dto.getEstado(), dto.getLotes());
