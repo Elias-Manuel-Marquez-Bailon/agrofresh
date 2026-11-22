@@ -14,6 +14,9 @@ import CatalogoPage from '../pages/catalogo/CatalogoPage'
 import ProductoDetallePage from '../pages/catalogo/ProductoDetallePage'
 import MisProductosPage from '../pages/productor/MisProductosPage'
 import CategoriasPage from '../pages/admin/CategoriasPage'
+import CarritoPage from '../pages/comprador/CarritoPage'
+import MisPedidosPage from '../pages/comprador/MisPedidosPage'
+import PedidosRecibidosPage from '../pages/productor/PedidosRecibidosPage'
 import NoAutorizado from '../pages/NoAutorizado'
 import NotFound from '../pages/NotFound'
 import Spinner from '../components/ui/Spinner'
@@ -59,9 +62,12 @@ export default function AppRouter() {
           <Route element={<RoleRoute roles={['PRODUCTOR']} />}>
             <Route path="/productor" element={<ProductorHome />} />
             <Route path="/productor/productos" element={<MisProductosPage />} />
+            <Route path="/productor/pedidos" element={<PedidosRecibidosPage />} />
           </Route>
           <Route element={<RoleRoute roles={['COMPRADOR']} />}>
             <Route path="/comprador" element={<CompradorHome />} />
+            <Route path="/carrito" element={<CarritoPage />} />
+            <Route path="/comprador/pedidos" element={<MisPedidosPage />} />
           </Route>
           <Route path="/no-autorizado" element={<NoAutorizado />} />
         </Route>

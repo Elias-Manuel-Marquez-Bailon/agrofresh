@@ -2,14 +2,25 @@ import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { rutaInicio } from '../utils/errores'
+import { useCarrito } from '../context/CarritoContext'
 import Logo from './Logo'
 
 // Menú por rol. Se irá llenando en las siguientes fases.
 const CATALOGO = { to: '/catalogo', texto: 'Catálogo' }
 const MENU = {
   ADMIN: [{ to: '/admin', texto: 'Inicio', end: true }, { to: '/admin/categorias', texto: 'Categorías' }, CATALOGO],
-  PRODUCTOR: [{ to: '/productor', texto: 'Inicio', end: true }, { to: '/productor/productos', texto: 'Mis productos' }, CATALOGO],
-  COMPRADOR: [{ to: '/comprador', texto: 'Inicio', end: true }, CATALOGO],
+  PRODUCTOR: [
+    { to: '/productor', texto: 'Inicio', end: true },
+    { to: '/productor/productos', texto: 'Mis productos' },
+    { to: '/productor/pedidos', texto: 'Pedidos' },
+    CATALOGO,
+  ],
+  COMPRADOR: [
+    { to: '/comprador', texto: 'Inicio', end: true },
+    CATALOGO,
+    { to: '/comprador/pedidos', texto: 'Mis pedidos' },
+    { to: '/carrito', texto: 'Carrito', carrito: true },
+  ],
   INVITADO: [CATALOGO],
 }
 
@@ -17,6 +28,7 @@ const ETIQUETA_ROL = { ADMIN: 'Administrador', PRODUCTOR: 'Productor', COMPRADOR
 
 export default function Navbar() {
   const { usuario, logout } = useAuth()
+  const { cantidadItems } = useCarrito()
   const navigate = useNavigate()
   const [abierto, setAbierto] = useState(false)
   const items = usuario ? (MENU[usuario.rol] ?? []) : MENU.INVITADO
@@ -25,6 +37,19 @@ export default function Navbar() {
     logout()
     navigate('/login', { replace: true })
   }
+
+  // El link del carrito muestra cuántos productos lleva.
+  const textoDe = (i) =>
+    i.carrito && cantidadItems > 0 ? (
+      <>
+        {i.texto}{' '}
+        <span className="ml-1 rounded-full bg-marca-600 px-1.5 py-0.5 text-xs font-semibold text-white">
+          {cantidadItems}
+        </span>
+      </>
+    ) : (
+      i.texto
+    )
 
   const claseLink = ({ isActive }) =>
     `block rounded-lg px-3 py-2 text-sm font-medium ${
@@ -42,7 +67,7 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-1">
           {items.map((i) => (
             <NavLink key={i.to} to={i.to} end={i.end} className={claseLink}>
-              {i.texto}
+              {textoDe(i)}
             </NavLink>
           ))}
         </nav>
@@ -90,7 +115,7 @@ export default function Navbar() {
           </p>
           {items.map((i) => (
             <NavLink key={i.to} to={i.to} end={i.end} className={claseLink} onClick={() => setAbierto(false)}>
-              {i.texto}
+              {textoDe(i)}
             </NavLink>
           ))}
           <button onClick={salir} className="block w-full text-left rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50">
