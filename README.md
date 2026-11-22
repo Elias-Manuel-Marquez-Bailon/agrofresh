@@ -73,7 +73,7 @@ Luego ejecuta el backend desde IntelliJ y el frontend con `npm run dev` (ver `ba
 - [x] Fase 1 — Backend base + autenticación JWT + tests
 - [x] Fase 2 — Frontend base + login/registro + rutas por rol
 - [x] Fase 3 — Catálogo público de productos (búsqueda, filtro, paginación e imagen) y categorías
-- [ ] Fase 4 — Pedidos, carrito y estados
+- [x] Fase 4 — Pedidos, carrito y estados
 - [ ] Fase 5 — Trazabilidad y calificaciones
 - [ ] Fase 6 — Dashboards y exportación CSV
 - [ ] Fase 7 — Dockerfiles, Jenkinsfile y despliegue en AWS
