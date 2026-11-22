@@ -62,6 +62,11 @@ public class PedidoController {
     @PreAuthorize("hasAnyRole('COMPRADOR','PRODUCTOR')")
     public ResponseEntity<ApiResponse> cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambiarEstadoDto dto,
                                                      Authentication auth) {
-        return pedidoService.cambiarEstado(auth.getName(), id, dto.getEstado());
+        return pedidoService.cambiarEstado(auth.getName(), id, dto.getEstado(), dto.getLotes());
+    }
+
+    @GetMapping("/{id:\\d+}/trazabilidad")
+    public ResponseEntity<ApiResponse> trazabilidad(@PathVariable Long id, Authentication auth) {
+        return pedidoService.trazabilidad(auth.getName(), id);
     }
 }

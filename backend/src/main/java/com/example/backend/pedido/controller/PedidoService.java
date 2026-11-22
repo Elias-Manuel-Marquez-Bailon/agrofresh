@@ -1,6 +1,12 @@
 package com.example.backend.pedido.controller;
 
+import com.example.backend.calificacion.model.Calificacion;
+import com.example.backend.calificacion.model.CalificacionRepository;
 import com.example.backend.kernel.ApiResponse;
+import com.example.backend.lote.dtos.LoteResponseDto;
+import com.example.backend.lote.model.Lote;
+import com.example.backend.lote.model.LoteRepository;
+import com.example.backend.pedido.dtos.TrazabilidadDto;
 import com.example.backend.pedido.dtos.CrearPedidoDto;
 import com.example.backend.pedido.dtos.ItemPedidoDto;
 import com.example.backend.pedido.dtos.PedidoResponseDto;
@@ -28,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -47,6 +54,8 @@ public class PedidoService {
     private final ProductoRepository productoRepository;
     private final UsuarioRepository usuarioRepository;
     private final ProductorRepository productorRepository;
+    private final LoteRepository loteRepository;
+    private final CalificacionRepository calificacionRepository;
 
     // ---------- Crear (comprador) ----------
 
@@ -150,7 +159,42 @@ public class PedidoService {
         if (usuario.getRol() != Rol.ADMIN && !esComprador(usuario, pedido) && !esProductor(usuario, pedido)) {
             return respuesta("No tienes permiso para ver este pedido", null, true, HttpStatus.FORBIDDEN);
         }
-        return respuesta("Detalle del pedido", PedidoResponseDto.from(pedido), false, HttpStatus.OK);
+        Calificacion calificacion = calificacionRepository.findByPedidoIds(List.of(pedido.getId())).stream()
+                .findFirst().orElse(null);
+        return respuesta("Detalle del pedido", PedidoResponseDto.from(pedido, calificacion), false, HttpStatus.OK);
+    }
+
+    /** Siembra -> cosecha -> entrega de cada producto. Lo ven las partes del pedido o el ADMIN. */
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse> trazabilidad(String email, Long id) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+        Optional<Pedido> pedidoOpt = pedidoRepository.findById(id);
+        if (usuarioOpt.isEmpty() || pedidoOpt.isEmpty()) {
+            return respuesta("Pedido no encontrado", null, true, HttpStatus.NOT_FOUND);
+        }
+        Usuario usuario = usuarioOpt.get();
+        Pedido pedido = pedidoOpt.get();
+        if (usuario.getRol() != Rol.ADMIN && !esComprador(usuario, pedido) && !esProductor(usuario, pedido)) {
+            return respuesta("No tienes permiso para ver este pedido", null, true, HttpStatus.FORBIDDEN);
+        }
+
+        List<Long> loteIds = pedido.getDetalles().stream().map(DetallePedido::getLoteId)
+                .filter(java.util.Objects::nonNull).toList();
+        Map<Long, Lote> lotes = loteIds.isEmpty() ? Map.of() : loteRepository.findAllById(loteIds).stream()
+                .collect(Collectors.toMap(Lote::getId, Function.identity()));
+
+        List<TrazabilidadDto.Producto> productos = pedido.getDetalles().stream()
+                .map(d -> {
+                    Lote lote = d.getLoteId() == null ? null : lotes.get(d.getLoteId());
+                    return new TrazabilidadDto.Producto(d.getProducto().getId(), d.getProducto().getNombre(),
+                            d.getCantidad(), d.getProducto().getUnidad(),
+                            lote == null ? null : LoteResponseDto.from(lote));
+                })
+                .toList();
+        TrazabilidadDto dto = new TrazabilidadDto(pedido.getId(), pedido.getEstado(),
+                pedido.getProductor().getNombreFinca(), pedido.getProductor().getUbicacion(),
+                pedido.getCreatedAt(), pedido.getFechaEntrega(), productos);
+        return respuesta("Trazabilidad del pedido", dto, false, HttpStatus.OK);
     }
 
     // ---------- Cambio de estado ----------
@@ -161,8 +205,13 @@ public class PedidoService {
      * - Productor: cancela si está PENDIENTE o ACEPTADO (si estaba ACEPTADO, repone el stock).
      * - Comprador: solo cancela si está PENDIENTE.
      */
-    @Transactional(rollbackFor = {SQLException.class, Exception.class})
     public ResponseEntity<ApiResponse> cambiarEstado(String email, Long id, EstadoPedido nuevo) {
+        return cambiarEstado(email, id, nuevo, null);
+    }
+
+    /** lotes: opcional, solo al aceptar. { productoId: loteId } */
+    @Transactional(rollbackFor = {SQLException.class, Exception.class})
+    public ResponseEntity<ApiResponse> cambiarEstado(String email, Long id, EstadoPedido nuevo, Map<Long, Long> lotes) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
         Optional<Pedido> pedidoOpt = pedidoRepository.findByIdParaActualizar(id);
         if (usuarioOpt.isEmpty() || pedidoOpt.isEmpty()) {
@@ -186,10 +235,20 @@ public class PedidoService {
         }
 
         if (nuevo == EstadoPedido.ACEPTADO) {
-            ResponseEntity<ApiResponse> error = descontarStock(pedido);
+            // Los lotes se validan antes de tocar el stock, para no descontar si vienen mal.
+            Map<Long, Lote> lotesValidados = new java.util.HashMap<>();
+            ResponseEntity<ApiResponse> error = validarLotes(pedido, lotes, lotesValidados);
             if (error != null) return error;
+            error = descontarStock(pedido);
+            if (error != null) return error;
+            pedido.getDetalles().forEach(d -> {
+                Lote lote = lotesValidados.get(d.getProducto().getId());
+                if (lote != null) d.setLoteId(lote.getId());
+            });
         } else if (nuevo == EstadoPedido.CANCELADO && actual == EstadoPedido.ACEPTADO) {
             reponerStock(pedido);
+        } else if (nuevo == EstadoPedido.ENTREGADO) {
+            pedido.setFechaEntrega(LocalDateTime.now());
         }
 
         pedido.setEstado(nuevo);
@@ -208,6 +267,30 @@ public class PedidoService {
     }
 
     // ---------- Auxiliares ----------
+
+    /** Cada lote debe existir, ser del mismo producto del detalle y estar cosechado. */
+    private ResponseEntity<ApiResponse> validarLotes(Pedido pedido, Map<Long, Long> lotes, Map<Long, Lote> salida) {
+        if (lotes == null || lotes.isEmpty()) return null;
+        java.util.Set<Long> productosDelPedido = pedido.getDetalles().stream()
+                .map(d -> d.getProducto().getId()).collect(Collectors.toSet());
+        for (Map.Entry<Long, Long> e : lotes.entrySet()) {
+            if (e.getValue() == null) continue; // sin lote para ese producto
+            if (!productosDelPedido.contains(e.getKey())) {
+                return respuesta("Se indicó un lote para un producto que no está en el pedido", null, true,
+                        HttpStatus.BAD_REQUEST);
+            }
+            Optional<Lote> loteOpt = loteRepository.findById(e.getValue());
+            if (loteOpt.isEmpty() || !loteOpt.get().getProducto().getId().equals(e.getKey())) {
+                return respuesta("El lote seleccionado no corresponde al producto", null, true,
+                        HttpStatus.BAD_REQUEST);
+            }
+            if (loteOpt.get().getFechaCosecha() == null) {
+                return respuesta("El lote seleccionado aún no se ha cosechado", null, true, HttpStatus.BAD_REQUEST);
+            }
+            salida.put(e.getKey(), loteOpt.get());
+        }
+        return null;
+    }
 
     /**
      * Primero bloquea y valida TODOS los productos y solo después descuenta, para no dejar
@@ -266,8 +349,12 @@ public class PedidoService {
         if (tamanio < 1 || tamanio > TAMANIO_MAX_PAGINA) tamanio = 10;
         Page<Pedido> page = pedidoRepository.buscar(compradorId, productorId, estado,
                 PageRequest.of(pagina, tamanio, Sort.by(Sort.Direction.DESC, "id")));
+        // Una sola consulta para saber qué pedidos de la página ya están calificados.
+        Map<Long, Calificacion> calificaciones = page.isEmpty() ? Map.of()
+                : calificacionRepository.findByPedidoIds(page.getContent().stream().map(Pedido::getId).toList())
+                .stream().collect(Collectors.toMap(c -> c.getPedido().getId(), Function.identity()));
         PaginaDto<PedidoResponseDto> dto = new PaginaDto<>(
-                page.getContent().stream().map(PedidoResponseDto::from).toList(),
+                page.getContent().stream().map(p -> PedidoResponseDto.from(p, calificaciones.get(p.getId()))).toList(),
                 page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
         return respuesta(msg, dto, false, HttpStatus.OK);
     }
