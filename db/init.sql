@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
     total             DECIMAL(12,2) NOT NULL DEFAULT 0,
     direccion_entrega VARCHAR(255) NOT NULL,
     created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_entrega     DATETIME NULL,             -- se llena al pasar a ENTREGADO (trazabilidad)
     CONSTRAINT fk_pedidos_comprador FOREIGN KEY (comprador_id) REFERENCES usuarios(id),
     CONSTRAINT fk_pedidos_productor FOREIGN KEY (productor_id) REFERENCES productores(id),
     INDEX idx_pedidos_comprador (comprador_id),

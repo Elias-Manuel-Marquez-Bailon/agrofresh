@@ -50,6 +50,10 @@ public class Pedido {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** Se llena cuando el pedido pasa a ENTREGADO. */
+    @Column(name = "fecha_entrega")
+    private LocalDateTime fechaEntrega;
+
     /** BatchSize: al listar una página de pedidos, sus detalles se cargan en una sola consulta. */
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 50)
