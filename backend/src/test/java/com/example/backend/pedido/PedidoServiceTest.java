@@ -327,6 +327,35 @@ class PedidoServiceTest {
     }
 
     @Test
+    void admin_cancelaUnPedidoAceptadoYReponeStock() {
+        Usuario admin = Usuario.builder().id(50L).email("admin@agrofresh.com").rol(Rol.ADMIN).build();
+        Producto mango = producto(10L, juan, "25.50", "6");
+        Pedido pedido = pedido(EstadoPedido.ACEPTADO, mango, "4");
+        prepararCambio(admin, pedido);
+        when(productoRepository.findByIdParaActualizar(10L)).thenReturn(Optional.of(mango));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(i -> i.getArgument(0));
+
+        ResponseEntity<ApiResponse> res = pedidoService.cambiarEstado(admin.getEmail(), 100L, EstadoPedido.CANCELADO);
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(pedido.getEstado()).isEqualTo(EstadoPedido.CANCELADO);
+        assertThat(mango.getStock()).isEqualByComparingTo("10");
+    }
+
+    @Test
+    void admin_noPuedeAvanzarElFlujoDeUnPedido() {
+        Usuario admin = Usuario.builder().id(50L).email("admin@agrofresh.com").rol(Rol.ADMIN).build();
+        Pedido pedido = pedido(EstadoPedido.PENDIENTE, producto(10L, juan, "25.50", "10"), "4");
+        prepararCambio(admin, pedido);
+
+        ResponseEntity<ApiResponse> res = pedidoService.cambiarEstado(admin.getEmail(), 100L, EstadoPedido.ACEPTADO);
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(pedido.getEstado()).isEqualTo(EstadoPedido.PENDIENTE);
+        verify(productoRepository, never()).findByIdParaActualizar(any());
+    }
+
+    @Test
     void comprador_noPuedeAceptarSuPropioPedido() {
         Pedido pedido = pedido(EstadoPedido.PENDIENTE, producto(10L, juan, "25.50", "10"), "4");
         prepararCambio(ana, pedido);
