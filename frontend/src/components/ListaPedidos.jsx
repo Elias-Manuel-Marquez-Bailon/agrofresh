@@ -3,6 +3,10 @@ import { cambiarEstadoPedido } from '../api/pedidoService'
 import { leerError } from '../utils/errores'
 import { formatoCantidad, formatoFecha, formatoPrecio } from '../utils/formato'
 import EstadoPedido, { ESTADOS_PEDIDO } from './EstadoPedido'
+import AceptarPedidoModal from './AceptarPedidoModal'
+import CalificarModal from './CalificarModal'
+import Estrellas from './Estrellas'
+import TrazabilidadModal from './TrazabilidadModal'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
 import Spinner from './ui/Spinner'
@@ -38,7 +42,6 @@ function accionesDe(vista, estado) {
 
 const CONFIRMACION = {
   CANCELADO: '¿Seguro que quieres cancelar este pedido? Esta acción no se puede deshacer.',
-  ACEPTADO: 'Al aceptar se descontará el stock de tus productos. ¿Continuar?',
 }
 
 /** Lista paginada de pedidos con filtro por estado. vista: "comprador" | "productor". */
@@ -49,6 +52,9 @@ export default function ListaPedidos({ titulo, subtitulo, vista, cargar, mensaje
   const [error, setError] = useState('')
   const [exito, setExito] = useState(mensajeInicial)
   const [procesando, setProcesando] = useState(null) // id del pedido que se está actualizando
+  const [aceptando, setAceptando] = useState(null) // pedido en el modal de aceptar (elegir lotes)
+  const [trazabilidad, setTrazabilidad] = useState(null) // id del pedido
+  const [calificando, setCalificando] = useState(null) // pedido
 
   const recargar = useCallback(() => {
     return cargar({ estado, pagina, tamanio: TAMANIO })
@@ -63,20 +69,31 @@ export default function ListaPedidos({ titulo, subtitulo, vista, cargar, mensaje
     recargar()
   }, [recargar])
 
-  const cambiar = async (pedido, nuevo) => {
+  const cambiar = async (pedido, nuevo, lotes) => {
     if (CONFIRMACION[nuevo] && !window.confirm(CONFIRMACION[nuevo])) return
     setProcesando(pedido.id)
     setExito('')
     setError('')
     try {
-      const { mensaje } = await cambiarEstadoPedido(pedido.id, nuevo)
+      const { mensaje } = await cambiarEstadoPedido(pedido.id, nuevo, lotes)
       setExito(`Pedido #${pedido.id}: ${mensaje.toLowerCase()}`)
+      setAceptando(null)
       await recargar()
     } catch (e) {
       setError(leerError(e).mensaje)
+      setAceptando(null)
     } finally {
       setProcesando(null)
     }
+  }
+
+  // "Aceptar" abre el modal para elegir lotes; el resto cambia directo.
+  const alPulsar = (pedido, nuevo) => (nuevo === 'ACEPTADO' ? setAceptando(pedido) : cambiar(pedido, nuevo))
+
+  const alCalificar = (mensaje) => {
+    setCalificando(null)
+    setExito(mensaje)
+    recargar()
   }
 
   return (
@@ -152,22 +169,37 @@ export default function ListaPedidos({ titulo, subtitulo, vista, cargar, mensaje
                 ))}
               </ul>
 
-              {accionesDe(vista, p.estado).length > 0 && (
-                <div className="mt-4 flex flex-wrap justify-end gap-2">
-                  {accionesDe(vista, p.estado).map((a) => (
-                    <Button
-                      key={a.estado}
-                      variante={a.variante}
-                      className="py-2"
-                      disabled={procesando !== null}
-                      cargando={procesando === p.id}
-                      onClick={() => cambiar(p, a.estado)}
-                    >
-                      {a.texto}
-                    </Button>
-                  ))}
+              {p.calificacion && (
+                <div className="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                  <Estrellas valor={p.calificacion.puntuacion} />
+                  {p.calificacion.comentario && <p className="mt-1 text-gray-600">“{p.calificacion.comentario}”</p>}
                 </div>
               )}
+
+              <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+                {p.estado !== 'CANCELADO' && (
+                  <Button variante="secundario" className="py-2" onClick={() => setTrazabilidad(p.id)}>
+                    Ver trazabilidad
+                  </Button>
+                )}
+                {vista === 'comprador' && p.estado === 'ENTREGADO' && !p.calificacion && (
+                  <Button className="py-2" onClick={() => setCalificando(p)}>
+                    ⭐ Calificar
+                  </Button>
+                )}
+                {accionesDe(vista, p.estado).map((a) => (
+                  <Button
+                    key={a.estado}
+                    variante={a.variante}
+                    className="py-2"
+                    disabled={procesando !== null}
+                    cargando={procesando === p.id && a.estado !== 'ACEPTADO'}
+                    onClick={() => alPulsar(p, a.estado)}
+                  >
+                    {a.texto}
+                  </Button>
+                ))}
+              </div>
             </article>
           ))}
         </div>
@@ -191,6 +223,16 @@ export default function ListaPedidos({ titulo, subtitulo, vista, cargar, mensaje
           </Button>
         </div>
       )}
+
+      <AceptarPedidoModal
+        key={aceptando?.id ?? 'aceptar'}
+        pedido={aceptando}
+        enviando={procesando !== null}
+        onCerrar={() => setAceptando(null)}
+        onConfirmar={(lotes) => cambiar(aceptando, 'ACEPTADO', lotes)}
+      />
+      <TrazabilidadModal pedidoId={trazabilidad} onCerrar={() => setTrazabilidad(null)} />
+      <CalificarModal key={calificando?.id ?? 'calificar'} pedido={calificando} onCerrar={() => setCalificando(null)} onCalificado={alCalificar} />
     </section>
   )
 }

@@ -4,7 +4,11 @@ import { obtenerProducto } from '../../api/catalogoService'
 import { useAuth } from '../../context/AuthContext'
 import { leerError } from '../../utils/errores'
 import { formatoCantidad, formatoPrecio } from '../../utils/formato'
+import { resenasProductor } from '../../api/calificacionService'
 import AgregarAlCarrito from '../../components/AgregarAlCarrito'
+import { ResumenEstrellas } from '../../components/Estrellas'
+import ListaResenas from '../../components/ListaResenas'
+import OrigenProducto from '../../components/OrigenProducto'
 import ProductoImagen from '../../components/ProductoImagen'
 import Spinner from '../../components/ui/Spinner'
 
@@ -62,7 +66,10 @@ export default function ProductoDetallePage() {
         <div className="flex flex-col">
           <p className="text-sm font-medium text-marca-700">{producto.categoriaNombre}</p>
           <h1 className="mt-1 text-2xl font-bold">{producto.nombre}</h1>
-          <p className="mt-1 text-sm text-gray-500">Productor: {producto.nombreFinca}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+            Productor: {producto.nombreFinca}
+            <ResumenEstrellas promedio={producto.calificacionPromedio} total={producto.totalCalificaciones} />
+          </p>
 
           <p className="mt-6 text-3xl font-bold">
             {formatoPrecio(producto.precio)}
@@ -73,6 +80,8 @@ export default function ProductoDetallePage() {
           </p>
 
           {producto.descripcion && <p className="mt-6 whitespace-pre-line text-gray-700">{producto.descripcion}</p>}
+
+          <OrigenProducto productoId={producto.id} />
 
           <div className="mt-auto pt-8">
             {!usuario ? (
@@ -91,6 +100,24 @@ export default function ProductoDetallePage() {
           </div>
         </div>
       </div>
+
+      <div className="mt-6">
+        <ResenasDelProductor productorId={producto.productorId} />
+      </div>
     </section>
   )
+}
+
+function ResenasDelProductor({ productorId }) {
+  const [datos, setDatos] = useState(null)
+  useEffect(() => {
+    let vigente = true
+    resenasProductor(productorId)
+      .then((d) => vigente && setDatos(d))
+      .catch(() => vigente && setDatos(null))
+    return () => {
+      vigente = false
+    }
+  }, [productorId])
+  return <ListaResenas datos={datos} />
 }

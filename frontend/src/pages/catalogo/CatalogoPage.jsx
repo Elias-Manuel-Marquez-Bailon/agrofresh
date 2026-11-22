@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { buscarProductos, listarCategorias } from '../../api/catalogoService'
 import { leerError } from '../../utils/errores'
 import { formatoCantidad, formatoPrecio } from '../../utils/formato'
+import { ResumenEstrellas } from '../../components/Estrellas'
 import ProductoImagen from '../../components/ProductoImagen'
 import Alert from '../../components/ui/Alert'
 import Spinner from '../../components/ui/Spinner'
@@ -107,6 +108,7 @@ export default function CatalogoPage() {
                   <p className="text-xs font-medium text-marca-700">{p.categoriaNombre}</p>
                   <p className="mt-0.5 font-semibold group-hover:text-marca-700">{p.nombre}</p>
                   <p className="text-xs text-gray-500">{p.nombreFinca}</p>
+                  <ResumenEstrellas promedio={p.calificacionPromedio} total={p.totalCalificaciones} />
                   <div className="mt-3 flex items-end justify-between">
                     <p className="text-lg font-bold">
                       {formatoPrecio(p.precio)}
