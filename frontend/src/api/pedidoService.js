@@ -19,7 +19,13 @@ export async function pedidosRecibidos({ estado, pagina = 0, tamanio = 10 } = {}
   return data.data
 }
 
-export async function cambiarEstadoPedido(id, estado) {
-  const { data } = await api.patch(`/pedidos/${id}/estado`, { estado })
+/** lotes (opcional, solo al aceptar): { productoId: loteId } */
+export async function cambiarEstadoPedido(id, estado, lotes) {
+  const { data } = await api.patch(`/pedidos/${id}/estado`, { estado, lotes })
   return { pedido: data.data, mensaje: data.message }
+}
+
+export async function obtenerTrazabilidad(id) {
+  const { data } = await api.get(`/pedidos/${id}/trazabilidad`)
+  return data.data
 }
