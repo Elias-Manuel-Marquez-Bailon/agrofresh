@@ -89,6 +89,32 @@ Todas las respuestas usan el formato `{ message, data, error, status }`.
 - El productor avanza los estados y puede cancelar mientras el pedido esté PENDIENTE o ACEPTADO.
 - El comprador solo puede cancelar mientras esté PENDIENTE.
 
+**Lotes al aceptar (opcional):** `{ "estado": "ACEPTADO", "lotes": { "<productoId>": <loteId> } }`. El lote debe ser del mismo producto y estar cosechado. Al pasar a ENTREGADO se guarda `fecha_entrega`.
+
+| Método | Ruta | Acceso |
+|---|---|---|
+| GET | `/api/pedidos/{id}/trazabilidad` | Comprador o productor del pedido, o ADMIN: siembra → cosecha → entrega |
+
+### Lotes (trazabilidad)
+| Método | Ruta | Acceso |
+|---|---|---|
+| GET | `/api/lotes/producto/{productoId}` | Público: últimos lotes cosechados |
+| GET | `/api/lotes/mios?productoId=` | PRODUCTOR |
+| POST / PUT | `/api/lotes[/{id}]` | PRODUCTOR (solo sus productos; la cosecha no puede ser anterior a la siembra ni futura) |
+| DELETE | `/api/lotes/{id}` | PRODUCTOR (si no está asignado a pedidos) |
+
+### Calificaciones
+| Método | Ruta | Acceso |
+|---|---|---|
+| POST | `/api/calificaciones` | COMPRADOR: una por pedido, solo si está ENTREGADO |
+| GET | `/api/calificaciones/productor/{id}?pagina=&tamanio=` | Público: promedio, total y reseñas |
+| GET | `/api/calificaciones/mias` | PRODUCTOR |
+
+El catálogo (`/api/productos`) incluye `calificacionPromedio` y `totalCalificaciones` del productor.
+
+> **Base ya creada:** si tu base `agrofresh` existía antes de la Fase 5, ejecuta una vez:
+> `ALTER TABLE pedidos ADD COLUMN fecha_entrega DATETIME NULL;`
+
 ## Estructura
 
 ```
@@ -96,7 +122,9 @@ com.example.backend
 ├── auth/        registro, login y /me
 ├── categoria/   CRUD de categorías
 ├── producto/    catálogo, productos del productor e imágenes
-├── pedido/      carrito → pedidos y cambios de estado
+├── pedido/      carrito → pedidos, cambios de estado y trazabilidad
+├── lote/        lotes de siembra y cosecha
+├── calificacion/ reseñas de pedidos entregados
 ├── usuario/     entidades Usuario y Productor
 ├── config/      seguridad (JWT, CORS) y Swagger
 └── kernel/      ApiResponse y manejo global de excepciones
