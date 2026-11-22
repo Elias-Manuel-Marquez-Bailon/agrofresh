@@ -13,6 +13,7 @@ const MENU = {
     { to: '/productor', texto: 'Inicio', end: true },
     { to: '/productor/productos', texto: 'Mis productos' },
     { to: '/productor/pedidos', texto: 'Pedidos' },
+    { to: '/productor/lotes', texto: 'Lotes' },
     CATALOGO,
   ],
   COMPRADOR: [

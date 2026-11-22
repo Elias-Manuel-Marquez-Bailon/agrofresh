@@ -17,6 +17,7 @@ import CategoriasPage from '../pages/admin/CategoriasPage'
 import CarritoPage from '../pages/comprador/CarritoPage'
 import MisPedidosPage from '../pages/comprador/MisPedidosPage'
 import PedidosRecibidosPage from '../pages/productor/PedidosRecibidosPage'
+import LotesPage from '../pages/productor/LotesPage'
 import NoAutorizado from '../pages/NoAutorizado'
 import NotFound from '../pages/NotFound'
 import Spinner from '../components/ui/Spinner'
@@ -63,6 +64,7 @@ export default function AppRouter() {
             <Route path="/productor" element={<ProductorHome />} />
             <Route path="/productor/productos" element={<MisProductosPage />} />
             <Route path="/productor/pedidos" element={<PedidosRecibidosPage />} />
+            <Route path="/productor/lotes" element={<LotesPage />} />
           </Route>
           <Route element={<RoleRoute roles={['COMPRADOR']} />}>
             <Route path="/comprador" element={<CompradorHome />} />
