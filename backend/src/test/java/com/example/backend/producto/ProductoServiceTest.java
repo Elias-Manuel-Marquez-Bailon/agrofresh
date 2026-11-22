@@ -1,5 +1,6 @@
 package com.example.backend.producto;
 
+import com.example.backend.calificacion.model.CalificacionRepository;
 import com.example.backend.categoria.model.Categoria;
 import com.example.backend.categoria.model.CategoriaRepository;
 import com.example.backend.kernel.ApiResponse;
@@ -45,6 +46,8 @@ class ProductoServiceTest {
     private CategoriaRepository categoriaRepository;
     @Mock
     private ProductorRepository productorRepository;
+    @Mock
+    private CalificacionRepository calificacionRepository;
     @InjectMocks
     private ProductoService productoService;
 

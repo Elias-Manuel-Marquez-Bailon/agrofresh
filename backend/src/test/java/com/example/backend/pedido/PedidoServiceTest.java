@@ -1,6 +1,10 @@
 package com.example.backend.pedido;
 
+import com.example.backend.calificacion.model.CalificacionRepository;
 import com.example.backend.kernel.ApiResponse;
+import com.example.backend.lote.model.Lote;
+import com.example.backend.lote.model.LoteRepository;
+import com.example.backend.pedido.dtos.TrazabilidadDto;
 import com.example.backend.pedido.controller.PedidoService;
 import com.example.backend.pedido.dtos.CrearPedidoDto;
 import com.example.backend.pedido.dtos.ItemPedidoDto;
@@ -26,7 +30,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,6 +53,10 @@ class PedidoServiceTest {
     private UsuarioRepository usuarioRepository;
     @Mock
     private ProductorRepository productorRepository;
+    @Mock
+    private LoteRepository loteRepository;
+    @Mock
+    private CalificacionRepository calificacionRepository;
     @InjectMocks
     private PedidoService pedidoService;
 
@@ -193,6 +203,84 @@ class PedidoServiceTest {
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(mango.getStock()).isEqualByComparingTo("10");
         verify(productoRepository, never()).save(any());
+    }
+
+    // ---------- Lotes al aceptar y fecha de entrega ----------
+
+    private Lote lote(Long id, Producto producto, boolean cosechado) {
+        return Lote.builder().id(id).producto(producto).fechaSiembra(LocalDate.of(2026, 6, 1))
+                .fechaCosecha(cosechado ? LocalDate.of(2026, 10, 1) : null).parcela("Norte").build();
+    }
+
+    @Test
+    void aceptar_conLoteLoAsignaAlDetalle() {
+        Producto mango = producto(10L, juan, "25.50", "10");
+        Pedido pedido = pedido(EstadoPedido.PENDIENTE, mango, "4");
+        prepararCambio(usuarioJuan, pedido);
+        when(loteRepository.findById(7L)).thenReturn(Optional.of(lote(7L, mango, true)));
+        when(productoRepository.findByIdParaActualizar(10L)).thenReturn(Optional.of(mango));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(i -> i.getArgument(0));
+
+        ResponseEntity<ApiResponse> res = pedidoService.cambiarEstado(usuarioJuan.getEmail(), 100L,
+                EstadoPedido.ACEPTADO, Map.of(10L, 7L));
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(pedido.getDetalles().get(0).getLoteId()).isEqualTo(7L);
+    }
+
+    @Test
+    void aceptar_conLoteDeOtroProductoNoDescuentaStock() {
+        Producto mango = producto(10L, juan, "25.50", "10");
+        Producto limon = producto(11L, juan, "10.00", "10");
+        Pedido pedido = pedido(EstadoPedido.PENDIENTE, mango, "4");
+        prepararCambio(usuarioJuan, pedido);
+        when(loteRepository.findById(8L)).thenReturn(Optional.of(lote(8L, limon, true)));
+
+        ResponseEntity<ApiResponse> res = pedidoService.cambiarEstado(usuarioJuan.getEmail(), 100L,
+                EstadoPedido.ACEPTADO, Map.of(10L, 8L));
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(mango.getStock()).isEqualByComparingTo("10");
+        assertThat(pedido.getEstado()).isEqualTo(EstadoPedido.PENDIENTE);
+    }
+
+    @Test
+    void aceptar_conLoteSinCosecharSeRechaza() {
+        Producto mango = producto(10L, juan, "25.50", "10");
+        Pedido pedido = pedido(EstadoPedido.PENDIENTE, mango, "4");
+        prepararCambio(usuarioJuan, pedido);
+        when(loteRepository.findById(7L)).thenReturn(Optional.of(lote(7L, mango, false)));
+
+        assertThat(pedidoService.cambiarEstado(usuarioJuan.getEmail(), 100L, EstadoPedido.ACEPTADO,
+                Map.of(10L, 7L)).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verify(productoRepository, never()).findByIdParaActualizar(any());
+    }
+
+    @Test
+    void entregar_registraLaFechaDeEntrega() {
+        Pedido pedido = pedido(EstadoPedido.EN_CAMINO, producto(10L, juan, "25.50", "10"), "4");
+        prepararCambio(usuarioJuan, pedido);
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(i -> i.getArgument(0));
+
+        pedidoService.cambiarEstado(usuarioJuan.getEmail(), 100L, EstadoPedido.ENTREGADO);
+
+        assertThat(pedido.getFechaEntrega()).isNotNull();
+    }
+
+    @Test
+    void trazabilidad_incluyeElLoteDeCadaProducto() {
+        Producto mango = producto(10L, juan, "25.50", "10");
+        Pedido pedido = pedido(EstadoPedido.ENTREGADO, mango, "4");
+        pedido.getDetalles().get(0).setLoteId(7L);
+        when(usuarioRepository.findByEmail(ana.getEmail())).thenReturn(Optional.of(ana));
+        when(pedidoRepository.findById(100L)).thenReturn(Optional.of(pedido));
+        when(loteRepository.findAllById(any())).thenReturn(List.of(lote(7L, mango, true)));
+
+        ResponseEntity<ApiResponse> res = pedidoService.trazabilidad(ana.getEmail(), 100L);
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        TrazabilidadDto dto = (TrazabilidadDto) res.getBody().getData();
+        assertThat(dto.productos().get(0).lote().parcela()).isEqualTo("Norte");
     }
 
     // ---------- Cancelar ----------
