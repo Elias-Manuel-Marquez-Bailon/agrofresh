@@ -4,6 +4,7 @@ import { obtenerProducto } from '../../api/catalogoService'
 import { useAuth } from '../../context/AuthContext'
 import { leerError } from '../../utils/errores'
 import { formatoCantidad, formatoPrecio } from '../../utils/formato'
+import AgregarAlCarrito from '../../components/AgregarAlCarrito'
 import ProductoImagen from '../../components/ProductoImagen'
 import Spinner from '../../components/ui/Spinner'
 
@@ -83,13 +84,7 @@ export default function ProductoDetallePage() {
                 Inicia sesión para comprar
               </Link>
             ) : usuario.rol === 'COMPRADOR' ? (
-              <button
-                disabled
-                className="w-full cursor-not-allowed rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-500"
-                title="El carrito llega en la siguiente fase"
-              >
-                Agregar al carrito (próximamente)
-              </button>
+              <AgregarAlCarrito producto={producto} agotado={agotado} />
             ) : (
               <p className="text-sm text-gray-500">Solo los compradores pueden hacer pedidos.</p>
             )}
